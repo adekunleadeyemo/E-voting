@@ -233,6 +233,14 @@ fn create_election(elections: &mut HashMap<String, Election>) {
     elections.insert(name.trim().to_string(), election);
     println!("Election '{}' created successfully!", name.trim());
 }
+//making voter a global variable to change voted
+    //let mut name = String::new();
+    //let mut dob = String::new();
+    //let mut voter = Voter {
+    //name: name.trim().to_string(),
+    //dob: dob.trim().to_string(),
+   // voted: false,
+//};
 
 fn register_voter(voters: &mut HashMap<String, Voter>) {
     println!("Enter voter's name:");
@@ -287,7 +295,7 @@ fn tally_votes(elections: &mut HashMap<String, Election>) {
     if let Some(election) = elections.get(name.trim()) {
         // Add logic to tally votes here
         for candidate in election.candidates.iter() {
-            print!("{} {}", candidate.name, candidate.vote);
+            print!("\nCandidate: {} Votes: {} \n", candidate.name, candidate.vote);
         }
         println!("Votes tallied for election '{}'.", name.trim());
         
@@ -297,7 +305,22 @@ fn tally_votes(elections: &mut HashMap<String, Election>) {
 }
 
 fn cast_ballot(elections: &mut HashMap<String, Election>, voters: &mut HashMap<String, Voter>) {
-    
+    //bd
+    //println!("Confirm your name:");
+    //let mut voter_name = String::new();
+    //io::stdin().read_line(&mut voter_name).expect("Failed to read input");
+
+    // Check if the voter exists or add them to the voters list
+    //let voter = voters.entry(voter_name.trim().to_string()).or_insert(Voter { 
+      //  name: String::new(),
+        //dob: String::new(),
+        //voted: false });
+
+    //if voter.voted {
+      //  println!("You have already cast your vote.");
+        //return;
+    //}
+
     println!("Enter the name of the election you want to vote in:");
     let mut election_name = String::new();
     io::stdin().read_line(&mut election_name).expect("Failed to read input");
@@ -330,7 +353,7 @@ fn cast_ballot(elections: &mut HashMap<String, Election>, voters: &mut HashMap<S
         }
         
         // Store the selected candidates in the election (for simplicity, we're not checking for duplicates)
-       // voter.voted = true;
+        //voters.voted = true;
         println!("Ballot casted successfully!");
     } else {
         println!("Election '{}' not found.", election_name.trim());
