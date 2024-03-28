@@ -306,20 +306,20 @@ fn tally_votes(elections: &mut HashMap<String, Election>) {
 
 fn cast_ballot(elections: &mut HashMap<String, Election>, voters: &mut HashMap<String, Voter>) {
     //bd
-    //println!("Confirm your name:");
-    //let mut voter_name = String::new();
-    //io::stdin().read_line(&mut voter_name).expect("Failed to read input");
+    println!("Confirm your name:");
+    let mut voter_name = String::new();
+    io::stdin().read_line(&mut voter_name).expect("Failed to read input");
 
     // Check if the voter exists or add them to the voters list
-    //let voter = voters.entry(voter_name.trim().to_string()).or_insert(Voter { 
-      //  name: String::new(),
-        //dob: String::new(),
-        //voted: false });
+    let voter = voters.entry(voter_name.trim().to_string()).or_insert(Voter { 
+        name: String::new(),
+        dob: String::new(),
+        voted: false });
 
-    //if voter.voted {
-      //  println!("You have already cast your vote.");
-        //return;
-    //}
+    if voter.voted == true {
+        println!("You have already cast your vote.");
+        return;
+    }
 
     println!("Enter the name of the election you want to vote in:");
     let mut election_name = String::new();
@@ -353,7 +353,7 @@ fn cast_ballot(elections: &mut HashMap<String, Election>, voters: &mut HashMap<S
         }
         
         // Store the selected candidates in the election (for simplicity, we're not checking for duplicates)
-        //voters.voted = true;
+        voter.voted = true;
         println!("Ballot casted successfully!");
     } else {
         println!("Election '{}' not found.", election_name.trim());
