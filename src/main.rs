@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::io;
 use std::process::Command;
+use bcrypt::{hash, verify};
 
 struct Election {
     name: String,
@@ -68,6 +69,7 @@ fn main() {
     let mut elections: HashMap<String, Election> = HashMap::new();
     let mut voters: HashMap<String, Voter> = HashMap::new();
     loop {
+   	print!("\x1B[2J\x1B[1;1H"); // Clear screen
         println!("Welcome to E-voting!");
         println!("Choose an option:");
         println!("1. Electoral Officer Login");
@@ -84,6 +86,7 @@ fn main() {
                     println!("Authentication successful!");
     
                     loop {
+	                print!("\x1B[2J\x1B[1;1H");
                         println!("Choose an option:");
                         println!("1. Create new election");
                         println!("2. Register new voter");
@@ -131,6 +134,7 @@ fn main() {
                     println!("Authentication successful!");
     
                     loop {
+                        print!("\x1B[2J\x1B[1;1H");
                         println!("Choose an option:");
                         println!("1. Cast ballot");
                         println!("2. Exit");
@@ -170,7 +174,6 @@ fn main() {
 
     
 }
-
 fn authenticate_officer() -> bool {
     println!("Enter administrator username:");
     let mut username = String::new();
@@ -180,9 +183,18 @@ fn authenticate_officer() -> bool {
     let mut password = String::new();
     io::stdin().read_line(&mut password).expect("Failed to read input");
 
-    // Add authentication logic here
-    // For simplicity, let's assume a hardcoded username and password
-    username.trim() == "admin" && password.trim() == "password"
+    let admin_username = "admin";
+    let admin_password = "$2y$10$nKH4AeD7fM3E9B42MJyuJ.EnHC2LEMb8pNTX0zvIVYIt3dlKhPTOe";
+
+
+if username.trim() == admin_username {
+        match verify(password.trim(), admin_password) {
+            Ok(valid) => valid,
+            Err(_) => false,
+        }
+    } else {
+        false
+    }
 }
 
 fn authenticate_voter(voters:&mut HashMap<String, Voter>) -> bool {
@@ -306,20 +318,20 @@ fn tally_votes(elections: &mut HashMap<String, Election>) {
 
 fn cast_ballot(elections: &mut HashMap<String, Election>, voters: &mut HashMap<String, Voter>) {
     //bd
-    println!("Confirm your name:");
-    let mut voter_name = String::new();
-    io::stdin().read_line(&mut voter_name).expect("Failed to read input");
+    //println!("Confirm your name:");
+    //let mut voter_name = String::new();
+    //io::stdin().read_line(&mut voter_name).expect("Failed to read input");
 
     // Check if the voter exists or add them to the voters list
-    let voter = voters.entry(voter_name.trim().to_string()).or_insert(Voter { 
-        name: String::new(),
-        dob: String::new(),
-        voted: false });
+    //let voter = voters.entry(voter_name.trim().to_string()).or_insert(Voter { 
+      //  name: String::new(),
+        //dob: String::new(),
+        //voted: false });
 
-    if voter.voted == true {
-        println!("You have already cast your vote.");
-        return;
-    }
+    //if voter.voted {
+      //  println!("You have already cast your vote.");
+        //return;
+    //}
 
     println!("Enter the name of the election you want to vote in:");
     let mut election_name = String::new();
@@ -353,7 +365,7 @@ fn cast_ballot(elections: &mut HashMap<String, Election>, voters: &mut HashMap<S
         }
         
         // Store the selected candidates in the election (for simplicity, we're not checking for duplicates)
-        voter.voted = true;
+        //voters.voted = true;
         println!("Ballot casted successfully!");
     } else {
         println!("Election '{}' not found.", election_name.trim());
