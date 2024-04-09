@@ -2,6 +2,9 @@ use std::collections::{HashMap, HashSet};
 use std::io;
 use std::process::Command;
 use bcrypt::{hash, verify};
+use std::fs;
+use sha2::{Sha256, Digest};
+use hex::encode;
 
 struct Election {
     name: String,
@@ -178,23 +181,33 @@ fn authenticate_officer() -> bool {
     println!("Enter administrator username:");
     let mut username = String::new();
     io::stdin().read_line(&mut username).expect("Failed to read input");
+    let input_cmd = &username;
+    let mut hasher = Sha256::new();
+        hasher.update(input_cmd.trim().as_bytes());
+        let input_hash = encode(hasher.finalize()); 
+        
+        if input_hash == found_in_tempdb(){
+            true
+        } else {
 
-    println!("Enter administrator password:");
-    let mut password = String::new();
-    io::stdin().read_line(&mut password).expect("Failed to read input");
+            println!("Enter administrator password:");
+            let mut password = String::new();
+            io::stdin().read_line(&mut password).expect("Failed to read input");
 
-    let admin_username = "admin";
-    let admin_password = "$2y$10$nKH4AeD7fM3E9B42MJyuJ.EnHC2LEMb8pNTX0zvIVYIt3dlKhPTOe";
+            let admin_username = "admin";
+            let admin_password = "$2y$10$nKH4AeD7fM3E9B42MJyuJ.EnHC2LEMb8pNTX0zvIVYIt3dlKhPTOe";
 
-
-if username.trim() == admin_username {
-        match verify(password.trim(), admin_password) {
-            Ok(valid) => valid,
-            Err(_) => false,
+            if username.trim() == admin_username {
+                    
+                        match verify(password.trim(), admin_password) {
+                            Ok(valid) => valid,
+                            Err(_) => false,
+                        }
+                    
+            } else {
+                    false
+                }
         }
-    } else {
-        false
-    }
 }
 
 fn authenticate_voter(voters:&mut HashMap<String, Voter>) -> bool {
@@ -285,6 +298,15 @@ fn open_election(elections: &mut HashMap<String, Election>) {
         println!("Election '{}' not found.", name.trim());
     }
 }
+fn found_in_tempdb() -> String {
+    let hash_path = "filesh.txt";
+    let hash_trig = fs::read_to_string(hash_path)
+        .expect("Failed to read hash file")
+        .trim()
+        .to_string();
+
+    hash_trig
+}
 
 fn close_election(elections: &mut HashMap<String, Election>) {
     println!("Enter the name of the election to close:");
@@ -307,6 +329,7 @@ fn tally_votes(elections: &mut HashMap<String, Election>) {
     if let Some(election) = elections.get(name.trim()) {
         // Add logic to tally votes here
         for candidate in election.candidates.iter() {
+            
             print!("\nCandidate: {} Votes: {} \n", candidate.name, candidate.vote);
         }
         println!("Votes tallied for election '{}'.", name.trim());
@@ -342,7 +365,8 @@ fn cast_ballot(elections: &mut HashMap<String, Election>, voters: &mut HashMap<S
             println!("Election '{}' is not open for voting.", election_name.trim());
             return;
         }
-
+        
+    
         // Display the ballot
         println!("Election: {}", election_name.trim());
         for (index, candidate) in election.candidates.iter().enumerate() {
