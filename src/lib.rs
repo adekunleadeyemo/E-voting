@@ -271,3 +271,49 @@ pub mod ballot {
         }
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    // Import necessary libraries for testing
+    use super::election::Candidate;
+    use super::authentication::authenticate_voter;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_candidate_update_vote() {
+        // Create a new Candidate
+        let mut candidate = Candidate::new("John Doe".to_string(), "Independent".to_string());
+
+        // Initial vote count should be 0
+        assert_eq!(candidate.vote, 0);
+
+        // Update vote count
+        candidate.update_vote();
+
+        // Vote count should increase to 1
+        assert_eq!(candidate.vote, 1);
+    }
+
+    #[test]
+    fn test_authenticate_voter() {
+        // Create a HashMap of Voters for testing
+        let mut voters: HashMap<String, super::voter::Voter> = HashMap::new();
+
+        // Add a voter to the HashMap
+        let voter_name = "Alice".to_string();
+        let voter_dob = "1990-01-01".to_string();
+        let voter = super::voter::Voter {
+            name: voter_name.clone(),
+            dob: voter_dob.clone(),
+            voted: false,
+        };
+        voters.insert(voter_name.clone(), voter);
+
+        // Test valid authentication
+        assert!(authenticate_voter(&mut voters));
+
+        // Test invalid authentication with wrong date of birth
+        assert!(!authenticate_voter(&mut voters));
+    }
+}
