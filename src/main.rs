@@ -7,9 +7,11 @@ use e_voting::voter::Voter;
 fn main() {
     let mut elections: HashMap<String, Election> = HashMap::new();
     let mut voters: HashMap<String, Voter> = HashMap::new();
+    let mut username;
+
 
     loop {
-        clear_screen();
+        //clear_screen();
         println!("Welcome to E-voting!");
         println!("Choose an option:");
         println!("1. Electoral Officer Login");
@@ -24,7 +26,7 @@ fn main() {
                     println!("Authentication successful!");
 
                     loop {
-                        clear_screen();
+                        //clear_screen();
                         println!("Choose an option:");
                         println!("1. Create new election");
                         println!("2. Register new voter");
@@ -53,11 +55,15 @@ fn main() {
                 }
             }
             2 => {
-                if authenticate_voter(&mut voters) {
+                username = String::new();
+                println!("Enter voter name:");
+
+                io::stdin().read_line(&mut username).expect("Failed to read input");
+                if authenticate_voter(&mut voters, &mut username) {
                     println!("Authentication successful!");
 
                     loop {
-                        clear_screen();
+                        //clear_screen();
                         println!("Choose an option:");
                         println!("1. Cast ballot");
                         println!("2. Exit");
@@ -65,8 +71,8 @@ fn main() {
                         let voter_option: i32 = get_user_input("voter_option");
 
                         match voter_option {
-                            //1 => cast_ballot(&mut elections, &mut voters),
-                            1 => cast_ballot(&mut elections),
+                            1 => cast_ballot(&mut elections, &mut voters, &mut username),
+                            //1 => cast_ballot(&mut elections),
                             2 => {
                                 println!("Exiting...");
                                 break;
@@ -87,9 +93,9 @@ fn main() {
     }
 }
 
-fn clear_screen() {
-    print!("\x1B[2J\x1B[1;1H"); // Clear screen
-}
+//fn clear_screen() {
+//    print!("\x1B[2J\x1B[1;1H"); // Clear screen
+//}
 
 fn get_user_input(prompt: &str) -> i32 {
     println!("Enter {}: ", prompt);
